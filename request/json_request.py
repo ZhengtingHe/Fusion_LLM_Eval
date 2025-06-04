@@ -33,7 +33,8 @@ client = OpenAI(
 )
 
 completion = client.chat.completions.create(
-    model="qwen3-235B",
+    # model="qwen3-235B",
+    model="DeepSeek-R1-0528-AWQ",
     messages=[
         {
             "role": "system",
