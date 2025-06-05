@@ -11,40 +11,75 @@ from deepeval import evaluate
 #     evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.EXPECTED_OUTPUT],
 # )
 
-from langchain_deepseek import ChatDeepSeek
-deepseek_chat = ChatDeepSeek(
-    model="DeepSeek-R1-0528-AWQ",
-    base_url='http://180.213.184.177:30084/v1',
-    temperature=0.1,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-).with_structured_output(method="json_mode")
+# from langchain_deepseek import ChatDeepSeek
+# deepseek_json_chat = ChatDeepSeek(
+#     # model="DeepSeek-R1-0528-AWQ",
+#     # base_url='http://180.213.184.177:30084/v1',
+#     # api_key='Empty',
+
+#     model="deepseek-reasoner",
+#     base_url="https://api.deepseek.com",
+#     api_key="sk-47c6b7385f4d4e47af1969f6c99f2d4d",
+#     temperature=0.1,
+#     max_tokens=None,
+#     timeout=None,
+#     max_retries=2,
+# ).with_structured_output(method="json_mode")
 
 from deepeval.models.base_model import DeepEvalBaseLLM
+# class CustomOpenAI(DeepEvalBaseLLM):
+#     def __init__(
+#         self,
+#         model
+#     ):
+#         self.model = model
+
+#     def load_model(self):
+#         return self.model
+
+#     def generate(self, prompt: str) -> str:
+#         chat_model = self.load_model()
+#         return chat_model.invoke(prompt).content
+
+#     async def a_generate(self, prompt: str) -> str:
+#         chat_model = self.load_model()
+#         res = await chat_model.ainvoke(prompt)
+#         return res.content
+
+#     def get_model_name(self):
+#         return "Custom Model with OpenAI SDK"
+
+# deepseek_model = CustomOpenAI(deepseek_json_chat)
+from langchain_openai import ChatOpenAI     # pip install langchain-openai >=0.1.0
+
+deepseek_json_chat = ChatOpenAI(
+    model="deepseek-reasoner",
+    base_url="https://api.deepseek.com",
+    api_key="sk-47c6b7385f4d4e47af1969f6c99f2d4d",                   # 本地端点无需鉴权可留空
+    temperature=0,
+    model_kwargs={
+        "response_format": {"type": "json_object"}   # ★ 启用 JSON-Mode
+    },
+)
+
 class CustomOpenAI(DeepEvalBaseLLM):
-    def __init__(
-        self,
-        model
-    ):
-        self.model = model
+    def __init__(self, model):
+        self._model = model
 
     def load_model(self):
-        return self.model
+        return self._model          # ChatOpenAI 实例
 
     def generate(self, prompt: str) -> str:
-        chat_model = self.load_model()
-        return chat_model.invoke(prompt).content
+        return self._model.invoke(prompt).content
 
     async def a_generate(self, prompt: str) -> str:
-        chat_model = self.load_model()
-        res = await chat_model.ainvoke(prompt)
+        res = await self._model.ainvoke(prompt)
         return res.content
 
     def get_model_name(self):
-        return "Custom Model with OpenAI SDK"
+        return "DeepSeek Chat (JSON)"
 
-deepseek_model = CustomOpenAI(deepseek_chat)
+deepseek_model = CustomOpenAI(deepseek_json_chat)
 
 correctness_metric = GEval(
     name              = "正确率",
@@ -64,7 +99,18 @@ dereivation_metric = GEval(
         "如果推导过程不完整，或者有错误的推导步骤，认为是错误的",
         "推导中使用了不同符号或公式，但代表的物理量一致，认为是正确的",
     ],
-    evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.EXPECTED_OUTPUT],
+    evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT],
+    model=deepseek_model
+)
+
+relevance_metric = GEval(
+    name="相关性",
+    evaluation_steps=[
+        "确保实际输出回答了输入的问题",
+        "实际输出不应该包含与输入领域无关的信息",
+    ],
+    evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.INPUT],
+    model=deepseek_model
 )
 
 from deepeval.dataset import EvaluationDataset
@@ -95,10 +141,20 @@ def get_dataset(infer_model, ref_model, question_dataframe, QA_dataframe, domain
 
 if __name__ == "__main__":
     # 测试 correctness_metric
-    print(deepseek_model.generate("你是谁？"))
-    test_case = LLMTestCase(
+    test_case1 = LLMTestCase(
         input="水能喝吗", 
         actual_output="冰镇可乐更好喝",
         expected_output="水能喝",
         )
-    evaluate(test_cases=[test_case], metrics=[correctness_metric])
+    test_case2 = LLMTestCase(
+        input='氢元素的同位素有哪些',
+        actual_output='氢元素的同位素有氕、氘和氚',
+        expected_output='氢元素一共有7 种已知的同位素，其中有3种是天然存在的，分别是氕、氘和氚。',
+        )
+    test_case3 = LLMTestCase(
+        input='中国建国是哪一天',
+        actual_output='中国建国是1949年10月1日',
+        expected_output='中国（中华人民共和国）于1949年10月1日建立',
+        )
+
+    evaluate(test_cases=[test_case1, test_case2, test_case3], metrics=[correctness_metric, dereivation_metric, relevance_metric])

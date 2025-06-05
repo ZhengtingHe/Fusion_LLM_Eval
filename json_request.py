@@ -28,13 +28,17 @@ example3_response = json.dumps(
 )
 
 client = OpenAI(
-    api_key='Empty',
-    base_url="http://180.213.184.177:30084/v1",
+    # api_key='Empty',
+    # base_url="http://180.213.184.177:30084/v1",
+    
+    base_url="https://api.deepseek.com",
+    api_key="sk-47c6b7385f4d4e47af1969f6c99f2d4d",
 )
 
 completion = client.chat.completions.create(
     # model="qwen3-235B",
-    model="DeepSeek-R1-0528-AWQ",
+    # model="DeepSeek-R1-0528-AWQ",
+    model="deepseek-reasoner",
     messages=[
         {
             "role": "system",
