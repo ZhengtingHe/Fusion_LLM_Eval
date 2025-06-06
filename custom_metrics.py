@@ -1,6 +1,16 @@
+import toml
+with open('config.toml', 'r', encoding='utf-8') as toml_file:
+    config = toml.load(toml_file)
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCaseParams
 from deepeval import evaluate
+import json, logging
+logging.basicConfig(
+    filename="invalid_json.log",
+    level=logging.WARNING,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    encoding="utf-8"
+)
 # correctness_metric = GEval(
 #     name="Correctness",
 #     evaluation_steps=[
@@ -53,33 +63,62 @@ from deepeval.models.base_model import DeepEvalBaseLLM
 from langchain_openai import ChatOpenAI     # pip install langchain-openai >=0.1.0
 
 deepseek_json_chat = ChatOpenAI(
-    model="deepseek-reasoner",
-    base_url="https://api.deepseek.com",
-    api_key="sk-47c6b7385f4d4e47af1969f6c99f2d4d",                   # 本地端点无需鉴权可留空
+    model=config['model'],  # DeepSeek-R1-0528-AWQ
+    base_url=config['base_url'],  # http://
+    api_key=config['api_key'],                   # 本地端点无需鉴权可留空
     temperature=0,
     model_kwargs={
         "response_format": {"type": "json_object"}   # ★ 启用 JSON-Mode
     },
 )
 
+from util import repair_json_string
 class CustomOpenAI(DeepEvalBaseLLM):
-    def __init__(self, model):
+    def __init__(self, model, debug=False):
         self._model = model
+        self._debug = debug
 
     def load_model(self):
         return self._model          # ChatOpenAI 实例
 
     def generate(self, prompt: str) -> str:
-        return self._model.invoke(prompt).content
+        content = self._model.invoke(prompt).content
+        repaired_content = repair_json_string(content)
+        if self.debug:
+            # logging.info(f"Prompt send to LLM:{prompt}")
+            try:
+                json.loads(repaired_content)  # 尝试解析 JSON
+            except json.JSONDecodeError as e:
+                logging.warning(f"Invalid JSON caused by prompt: {prompt}")
+                logging.warning(f"Invalid JSON response: {repaired_content}")
+                logging.warning(f"Response before reparing: {content}")
+                raise e
+            return repaired_content
+        else:
+            return repaired_content
 
     async def a_generate(self, prompt: str) -> str:
         res = await self._model.ainvoke(prompt)
-        return res.content
+        content = res.content
+        repaired_content = repair_json_string(content)
+        if self._debug:
+            # logging.info(f"Prompt send to LLM:{prompt}")
+            try:
+                json.loads(repaired_content)
+                # logging.info(f"Valid JSON: {content}")  
+            except json.JSONDecodeError as e:
+                logging.warning(f"Invalid JSON caused by prompt: {prompt}")
+                logging.warning(f"Invalid JSON response: {repaired_content}")
+                logging.warning(f"Response before reparing: {content}")
+                raise e
+            return repaired_content
+        else:
+            return repaired_content
 
     def get_model_name(self):
         return "DeepSeek Chat (JSON)"
 
-deepseek_model = CustomOpenAI(deepseek_json_chat)
+deepseek_model = CustomOpenAI(deepseek_json_chat, debug=True)  # 设置 debug=True 以启用 JSON 验证和日志记录
 
 correctness_metric = GEval(
     name              = "正确率",
@@ -92,7 +131,7 @@ correctness_metric = GEval(
     model=deepseek_model
 )
 
-dereivation_metric = GEval(
+derivation_metric = GEval(
     name="过程分",
     evaluation_steps=[
         "检查推导过程是否正确",
@@ -157,4 +196,4 @@ if __name__ == "__main__":
         expected_output='中国（中华人民共和国）于1949年10月1日建立',
         )
 
-    evaluate(test_cases=[test_case1, test_case2, test_case3], metrics=[correctness_metric, dereivation_metric, relevance_metric])
+    evaluate(test_cases=[test_case1, test_case2, test_case3], metrics=[correctness_metric, derivation_metric, relevance_metric])

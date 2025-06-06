@@ -1,8 +1,11 @@
 # 步骤 1：发出请求
-
+import toml
+with open('config.toml', 'r', encoding='utf-8') as toml_file:
+    config = toml.load(toml_file)
 from openai import OpenAI
 import os
 import json
+from util import remove_markdown_code_block
 
 # 预定义示例响应（用于few-shot提示）
 example1_response = json.dumps(
@@ -28,17 +31,12 @@ example3_response = json.dumps(
 )
 
 client = OpenAI(
-    # api_key='Empty',
-    # base_url="http://180.213.184.177:30084/v1",
-    
-    base_url="https://api.deepseek.com",
-    api_key="sk-47c6b7385f4d4e47af1969f6c99f2d4d",
+    base_url=config['base_url'],
+    api_key=config['api_key'],
 )
 
 completion = client.chat.completions.create(
-    # model="qwen3-235B",
-    # model="DeepSeek-R1-0528-AWQ",
-    model="deepseek-reasoner",
+    model=config['model'],
     messages=[
         {
             "role": "system",
@@ -63,3 +61,4 @@ completion = client.chat.completions.create(
 
 json_string = completion.choices[0].message.content
 print(json_string)
+print(remove_markdown_code_block(json_string))  # 确保输出是有效的JSON

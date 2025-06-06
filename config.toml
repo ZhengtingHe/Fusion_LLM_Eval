@@ -1,3 +1,15 @@
+# base_url = "http://180.213.184.177:30084/v1"
+# api_key = 'Empty'
+# model = "DeepSeek-R1-0528-AWQ"
+
+base_url = "http://113.140.77.91:1025/v1"
+api_key = "Empty"
+model = "deepseekv3"
+
+# base_url = "https://api.deepseek.com"
+# api_key = "sk-47c6b7385f4d4e47af1969f6c99f2d4d"
+# model = "deepseek-reasoner"
+
 model_names = [
     "新奥QA测试-32B蒸馏",
     "新奥QA测试-14B蒸馏",
@@ -9,14 +21,6 @@ model_names = [
     "x-ai/grok-3-beta",
 ]
 QA_file_name = "QA_tables.xlsx"
-# alternative_names :
-#     # 新奥QA测试-32B蒸馏 : deepseek-ai/DeepSeek-R1-Distill-Qwen-32B,
-#     # 新奥QA测试-14B蒸馏 : deepseek-ai/DeepSeek-R1-Distill-Qwen-14B,
-#     新奥QA测试-32B蒸馏 : DeepSeek-R1-Distill-Qwen-32B
-#     新奥QA测试-14B蒸馏 : DeepSeek-R1-Distill-Qwen-14B
-# The above YAML comments and structure for alternative_names don't translate directly to a simple TOML table
-# if the intent was to have specific key-value pairs uncommented.
-# Assuming the last two lines were the intended active configuration:
 [alternative_names]
 "新奥QA测试-32B蒸馏" = "DeepSeek-R1-Distill-Qwen-32B"
 "新奥QA测试-14B蒸馏" = "DeepSeek-R1-Distill-Qwen-14B"
