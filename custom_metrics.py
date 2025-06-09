@@ -5,12 +5,34 @@ from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCaseParams
 from deepeval import evaluate
 import json, logging
-logging.basicConfig(
-    filename="invalid_json.log",
-    level=logging.WARNING,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    encoding="utf-8"
-)
+# Get the root logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)  # Set the logger to the lowest level you want to capture
+
+# --- Handler for WARNINGS ---
+# This remains mostly the same from your original code.
+warn_handler = logging.FileHandler('invalid_json.log', encoding='utf-8')
+warn_handler.setLevel(logging.WARNING)
+warn_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+warn_handler.setFormatter(warn_formatter)
+
+# --- Handler for INFO ---
+# We'll create a new handler for the info log.
+info_handler = logging.FileHandler('info.log', encoding='utf-8')
+info_handler.setLevel(logging.INFO)
+info_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+info_handler.setFormatter(info_formatter)
+
+# This filter will ensure that only INFO messages are handled by the info_handler
+class InfoFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno == logging.INFO
+
+info_handler.addFilter(InfoFilter())
+
+# Add both handlers to the logger
+logger.addHandler(warn_handler)
+logger.addHandler(info_handler)
 # correctness_metric = GEval(
 #     name="Correctness",
 #     evaluation_steps=[
@@ -85,7 +107,7 @@ class CustomOpenAI(DeepEvalBaseLLM):
         content = self._model.invoke(prompt).content
         repaired_content = repair_json_string(content)
         if self.debug:
-            # logging.info(f"Prompt send to LLM:{prompt}")
+            logging.info(f"Prompt send to LLM:{prompt}")
             try:
                 json.loads(repaired_content)  # 尝试解析 JSON
             except json.JSONDecodeError as e:
@@ -102,7 +124,8 @@ class CustomOpenAI(DeepEvalBaseLLM):
         content = res.content
         repaired_content = repair_json_string(content)
         if self._debug:
-            # logging.info(f"Prompt send to LLM:{prompt}")
+            logging.info(f"Prompt send to LLM:{prompt}")
+            logging.info(f"Response from LLM: {content}")
             try:
                 json.loads(repaired_content)
                 # logging.info(f"Valid JSON: {content}")  
@@ -126,6 +149,7 @@ correctness_metric = GEval(
         "检查最终结论是否与预期中的结论一致",
         "推导思路相近但结论不同的情况，认为是错误的",
         "如果出现公式和物理量，需要检查代表内容是否一致",
+        # "如果实际输出中包含预期输出中没有的内容，只要不影响结论并且与问题有关，认为是正确的",
     ],
     evaluation_params = [LLMTestCaseParams.ACTUAL_OUTPUT,LLMTestCaseParams.EXPECTED_OUTPUT],
     model=deepseek_model

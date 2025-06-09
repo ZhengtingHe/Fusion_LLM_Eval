@@ -2,9 +2,13 @@
 # api_key = 'Empty'
 # model = "DeepSeek-R1-0528-AWQ"
 
-base_url = "http://113.140.77.91:1025/v1"
+# base_url = "http://113.140.77.91:1025/v1"
+# api_key = "Empty"
+# model = "deepseekv3"
+
+base_url = "http://180.213.184.177:30084/v1"
 api_key = "Empty"
-model = "deepseekv3"
+model = "deepseek-r1"
 
 # base_url = "https://api.deepseek.com"
 # api_key = "sk-47c6b7385f4d4e47af1969f6c99f2d4d"

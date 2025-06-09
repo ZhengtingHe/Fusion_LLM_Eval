@@ -5,7 +5,7 @@ with open('config.toml', 'r', encoding='utf-8') as toml_file:
 from openai import OpenAI
 import os
 import json
-from util import remove_markdown_code_block
+from util import repair_json_string
 
 # 预定义示例响应（用于few-shot提示）
 example1_response = json.dumps(
@@ -61,4 +61,4 @@ completion = client.chat.completions.create(
 
 json_string = completion.choices[0].message.content
 print(json_string)
-print(remove_markdown_code_block(json_string))  # 确保输出是有效的JSON
+print(repair_json_string(json_string))  # 确保输出是有效的JSON
