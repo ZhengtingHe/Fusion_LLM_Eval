@@ -83,22 +83,31 @@ from deepeval.models.base_model import DeepEvalBaseLLM
 
 # deepseek_model = CustomOpenAI(deepseek_json_chat)
 from langchain_openai import ChatOpenAI     # pip install langchain-openai >=0.1.0
-
+from pydantic import BaseModel
+from openai import OpenAI
+class score(BaseModel):
+    score: int
+    reason: str
+json_schema = score.model_json_schema()
 deepseek_json_chat = ChatOpenAI(
     model=config['model'],  # DeepSeek-R1-0528-AWQ
     base_url=config['base_url'],  # http://
     api_key=config['api_key'],                   # 本地端点无需鉴权可留空
     temperature=0,
     model_kwargs={
-        "response_format": {"type": "json_object"}   # ★ 启用 JSON-Mode
+        "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
+        # "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
     },
 )
 
 from util import repair_json_string
+
 class CustomOpenAI(DeepEvalBaseLLM):
+    
     def __init__(self, model, debug=False):
         self._model = model
         self._debug = debug
+        self._model_name = config['model']
 
     def load_model(self):
         return self._model          # ChatOpenAI 实例
@@ -139,7 +148,7 @@ class CustomOpenAI(DeepEvalBaseLLM):
             return repaired_content
 
     def get_model_name(self):
-        return "DeepSeek Chat (JSON)"
+        return f"{self._model_name} (JSON)"
 
 deepseek_model = CustomOpenAI(deepseek_json_chat, debug=True)  # 设置 debug=True 以启用 JSON 验证和日志记录
 
@@ -151,7 +160,7 @@ correctness_metric = GEval(
         "如果出现公式和物理量，需要检查代表内容是否一致",
         # "如果实际输出中包含预期输出中没有的内容，只要不影响结论并且与问题有关，认为是正确的",
     ],
-    evaluation_params = [LLMTestCaseParams.ACTUAL_OUTPUT,LLMTestCaseParams.EXPECTED_OUTPUT],
+    evaluation_params = [LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT,LLMTestCaseParams.EXPECTED_OUTPUT],
     model=deepseek_model
 )
 

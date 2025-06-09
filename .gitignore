@@ -2,5 +2,4 @@
 __pycache__/
 *.log
 *deepeval-cache.json
-.deepeval/.deepeval-cache.json
-.deepeval/.deepeval-cache.json
+*temp_test_run_data.json

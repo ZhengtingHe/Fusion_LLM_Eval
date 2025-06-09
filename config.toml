@@ -13,7 +13,8 @@ model = "deepseek-r1"
 # base_url = "https://api.deepseek.com"
 # api_key = "sk-47c6b7385f4d4e47af1969f6c99f2d4d"
 # model = "deepseek-reasoner"
-
+input_question_excel_file = 'QA_tables.xlsx'
+ouput_question_jsonl_file = 'golden_questions.jsonl'
 model_names = [
     "新奥QA测试-32B蒸馏",
     "新奥QA测试-14B蒸馏",
