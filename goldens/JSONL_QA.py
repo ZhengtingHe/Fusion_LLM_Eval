@@ -16,11 +16,13 @@ script_dir = Path(__file__).resolve().parent
 project_root = script_dir.parent
 with open(project_root / 'config.toml', 'r', encoding='utf-8') as toml_file:
     config = toml.load(toml_file)
-output_jsonl_file = Path(config['goldens_question_jsonl_file'])
+output_jsonl_file = Path(config['goldens_QA_jsonl_file'])
 assert output_jsonl_file.suffix == '.jsonl'
+reference_model_name = config['reference_model_name']+ "_answer"
+print(f"reference_model_name: {reference_model_name}")
 # 使用更直观的 / 操作符来拼接路径
 # excel_file_path -> Path object for .../Fusion_QA_Gen/source/QA_tables.xlsx
-excel_file_path = project_root / 'goldens' / config['input_question_excel_file']
+excel_file_path = project_root / 'QA' / Path(reference_model_name+'s.xlsx')
 
 # 构建输出文件的路径
 # output_filename -> Path object for .../Fusion_QA_Gen/goldens/output.jsonl
@@ -43,6 +45,7 @@ try:
             for index, row in df.iterrows():
                 record = {
                     "问题": row.get("问题"),
+                    "参考答案": row.get(reference_model_name),
                     "客观分类": row.get("客观分类"),
                     "知识点": row.get("知识点"),
                     "主观难易度": row.get("主观难易度"),
