@@ -5,10 +5,10 @@ curl --location http://180.213.184.177:30084/v1/chat/completions \
     "messages": [
         {
             "role": "user",
-            "content": "你是谁"
+            "content": "给我讲个笑话"
         }
     ],
     "max_tokens": 12000,
     "temperature": 0.7,
-    "stream": true
+    "stream": false
 }'

@@ -5,6 +5,11 @@ from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCaseParams
 from deepeval import evaluate
 import json, logging
+
+# Silence the urllib3 logger by setting its level to WARNING
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai._base_client").setLevel(logging.WARNING)
 # Get the root logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  # Set the logger to the lowest level you want to capture
@@ -13,14 +18,16 @@ logger.setLevel(logging.INFO)  # Set the logger to the lowest level you want to 
 # This remains mostly the same from your original code.
 warn_handler = logging.FileHandler('invalid_json.log', encoding='utf-8')
 warn_handler.setLevel(logging.WARNING)
-warn_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+# warn_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+warn_formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
 warn_handler.setFormatter(warn_formatter)
 
 # --- Handler for INFO ---
 # We'll create a new handler for the info log.
 info_handler = logging.FileHandler('info.log', encoding='utf-8')
 info_handler.setLevel(logging.INFO)
-info_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+# info_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+info_formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
 info_handler.setFormatter(info_formatter)
 
 # This filter will ensure that only INFO messages are handled by the info_handler
@@ -33,6 +40,9 @@ info_handler.addFilter(InfoFilter())
 # Add both handlers to the logger
 logger.addHandler(warn_handler)
 logger.addHandler(info_handler)
+# The following line would now be ignored by the logging system
+# because we set the "urllib3" logger's level to WARNING.
+logging.getLogger("urllib3").info('This is a test from urllib3 and it will not be logged.')
 # correctness_metric = GEval(
 #     name="Correctness",
 #     evaluation_steps=[
@@ -90,14 +100,14 @@ class score(BaseModel):
     reason: str
 json_schema = score.model_json_schema()
 deepseek_json_chat = ChatOpenAI(
-    model=config['model'],  # DeepSeek-R1-0528-AWQ
-    base_url=config['base_url'],  # http://
-    api_key=config['api_key'],                   # 本地端点无需鉴权可留空
+    model=config['model'],  
+    base_url=config['base_url'],  
+    api_key=config['api_key'],                 
     temperature=0,
-    model_kwargs={
-        "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
-        # "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
-    },
+    # model_kwargs={
+    #     # "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
+    #     "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
+    # },
 )
 
 from util import repair_json_string
@@ -116,7 +126,8 @@ class CustomOpenAI(DeepEvalBaseLLM):
         content = self._model.invoke(prompt).content
         repaired_content = repair_json_string(content)
         if self.debug:
-            logging.info(f"Prompt send to LLM:{prompt}")
+            # logging.info(f"Prompt send to LLM:{prompt}")
+
             try:
                 json.loads(repaired_content)  # 尝试解析 JSON
             except json.JSONDecodeError as e:
@@ -133,11 +144,12 @@ class CustomOpenAI(DeepEvalBaseLLM):
         content = res.content
         repaired_content = repair_json_string(content)
         if self._debug:
-            logging.info(f"Prompt send to LLM:{prompt}")
-            logging.info(f"Response from LLM: {content}")
+            # logging.info(f"Prompt send to LLM:{prompt}")
+            # logging.info(f"Response from LLM: {content}")
+            logging.info(f"Usage metadata: {res.usage_metadata}")
             try:
                 json.loads(repaired_content)
-                # logging.info(f"Valid JSON: {content}")  
+                logging.info(f"Valid JSON: {content}")  
             except json.JSONDecodeError as e:
                 logging.warning(f"Invalid JSON caused by prompt: {prompt}")
                 logging.warning(f"Invalid JSON response: {repaired_content}")
@@ -155,6 +167,7 @@ deepseek_model = CustomOpenAI(deepseek_json_chat, debug=True)  # 设置 debug=Tr
 correctness_metric = GEval(
     name              = "正确率",
     evaluation_steps  = [
+        "用简体中文陈述给分原因",
         "检查最终结论是否与预期中的结论一致",
         "推导思路相近但结论不同的情况，认为是错误的",
         "如果出现公式和物理量，需要检查代表内容是否一致",
@@ -167,6 +180,7 @@ correctness_metric = GEval(
 derivation_metric = GEval(
     name="过程分",
     evaluation_steps=[
+        "用简体中文陈述给分原因",
         "检查推导过程是否正确",
         "如果推导过程不完整，或者有错误的推导步骤，认为是错误的",
         "推导中使用了不同符号或公式，但代表的物理量一致，认为是正确的",
@@ -178,6 +192,7 @@ derivation_metric = GEval(
 relevance_metric = GEval(
     name="相关性",
     evaluation_steps=[
+        "用简体中文陈述给分原因",
         "确保实际输出回答了输入的问题",
         "实际输出不应该包含与输入领域无关的信息",
     ],

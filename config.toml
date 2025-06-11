@@ -6,17 +6,17 @@
 # api_key = "Empty"
 # model = "deepseekv3"
 
-# base_url = "http://180.213.184.177:30084/v1"
-# api_key = "Empty"
-# model = "deepseek-r1"
+base_url = "http://180.213.184.177:30084/v1"
+api_key = "Empty"
+model = "deepseek-r1"
 
 # base_url = "http://180.213.184.153:30084/v1"
 # api_key = "Empty"
 # model = "qwen3-235b"
 
-base_url = "http://180.213.184.153:30082/v1"
-api_key = "Empty"
-model = "qwen3-14b"
+# base_url = "http://180.213.184.153:30082/v1"
+# api_key = "Empty"
+# model = "qwen3-14b"
 
 # base_url = "https://api.deepseek.com"
 # api_key = "sk-47c6b7385f4d4e47af1969f6c99f2d4d"

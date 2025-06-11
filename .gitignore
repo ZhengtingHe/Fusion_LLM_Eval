@@ -3,3 +3,4 @@ __pycache__/
 *.log
 *deepeval-cache.json
 *temp_test_run_data.json
+.vscode/settings.json
