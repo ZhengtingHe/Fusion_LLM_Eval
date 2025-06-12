@@ -60,3 +60,6 @@ LLM_judge_model = "Qwen3-32B"
 # LLM_judge_model = "deepseek-r1-250120"
 
 embedding_model = "bge-m3"
+
+[serverchan]
+SENDKEY = "SCT282544TL0OGujmTDvM8IjUNxud8UndW"

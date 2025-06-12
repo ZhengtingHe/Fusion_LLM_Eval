@@ -104,10 +104,12 @@ deepseek_json_chat = ChatOpenAI(
     base_url=config['base_url'],  
     api_key=config['api_key'],                 
     temperature=0,
-    # model_kwargs={
-    #     # "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
-    #     "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
-    # },
+    request_timeout=180,  # 增加到180秒以处理大型请求
+    max_retries=3,        # 保持3次重试
+    model_kwargs={
+        "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
+        # "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
+    },
 )
 
 from util import repair_json_string
@@ -125,7 +127,7 @@ class CustomOpenAI(DeepEvalBaseLLM):
     def generate(self, prompt: str) -> str:
         content = self._model.invoke(prompt).content
         repaired_content = repair_json_string(content)
-        if self.debug:
+        if self._debug:
             # logging.info(f"Prompt send to LLM:{prompt}")
 
             try:
@@ -134,7 +136,7 @@ class CustomOpenAI(DeepEvalBaseLLM):
                 logging.warning(f"Invalid JSON caused by prompt: {prompt}")
                 logging.warning(f"Invalid JSON response: {repaired_content}")
                 logging.warning(f"Response before reparing: {content}")
-                raise e
+                # raise e
             return repaired_content
         else:
             return repaired_content
