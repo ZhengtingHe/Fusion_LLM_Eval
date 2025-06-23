@@ -204,7 +204,7 @@ relevance_metric = GEval(
 
 from deepeval.dataset import EvaluationDataset
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
-def get_dataset(infer_model, ref_model, question_dataframe, QA_dataframe, domains):
+def get_dataset(infer_model, ref_model, QA_dataframe, domains):
     questions = []
     actual_output = []
     expected_output = []
@@ -214,7 +214,7 @@ def get_dataset(infer_model, ref_model, question_dataframe, QA_dataframe, domain
         domains = [domains]
 
     for domain in domains:
-        questions.extend(question_dataframe[domain]['问题'].tolist())
+        questions.extend(QA_dataframe[infer_model][domain]['问题'].tolist())
         actual_output.extend(QA_dataframe[infer_model][domain][infer_model + '_answer'].tolist())
         expected_output.extend(QA_dataframe[ref_model][domain][ref_model + '_answer'].tolist())
     test_cases = []

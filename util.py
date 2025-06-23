@@ -44,7 +44,9 @@
 #     return fixed
 
 import re
-
+from pathlib import Path
+dir_path = Path(__file__).parent
+import pandas as pd
 # 0) 预编译的原有正则
 # 如果你看不懂这些正则，请丢给AI帮你解释
 _RE_MARKDOWN_CODE_BLOCK = re.compile(r'^(\s*```\w*\s*\n?)|(\s*```\s*$)', re.MULTILINE)
@@ -81,6 +83,27 @@ def repair_json_string(content: str) -> str:
     fixed = _RE_LOSE_BACKSLASH.sub(r'\\\\', fixed)
 
     return fixed
+
+def sanitize_model_name(model_name: str) -> str:
+    """
+    从模型名称中移除前缀和斜杠。
+    例如：'openai/gpt-4.1' -> 'gpt-4.1'
+    """
+    return model_name.split('/')[-1]
+
+import toml
+with open('config.toml', 'r', encoding='utf-8') as toml_file:
+    config = toml.load(toml_file)
+
+model_names = config['model_names']
+
+def get_QA_from_different_models():
+    QA_df = {}
+    for i, model in enumerate(model_names):
+        QA_FILE = "QA" / Path(f"{model}_answers.xlsx")
+        QA_df[model_names[i]] = pd.read_excel(QA_FILE, sheet_name=None, index_col=0)
+    QA_df['goldens'] = pd.read_excel(dir_path / "goldens" / config['goldens_QA_excel_file'])
+    return QA_df
 
 
 if __name__ == "__main__":
