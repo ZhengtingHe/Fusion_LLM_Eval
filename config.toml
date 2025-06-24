@@ -23,7 +23,7 @@ model = "deepseek-r1"
 # model = "deepseek-reasoner"
 input_question_excel_file = 'QA_tables.xlsx'
 goldens_question_jsonl_file = 'golden_questions.jsonl'
-reference_model_name = "anthropic/claude-sonnet-4"
+reference_model_name = "openai/o3"
 goldens_QA_jsonl_file = 'QA_goldens.jsonl'
 goldens_QA_excel_file = 'QA_goldens.xlsx'
 
