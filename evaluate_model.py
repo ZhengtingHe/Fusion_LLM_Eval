@@ -37,8 +37,8 @@ QA_df = get_QA_from_different_models()
 from custom_metrics import get_dataset, correctness_metric, relevance_metric
 from deepeval import evaluate
 
-inference_model = model_names[1]
-reference_answer = model_names[6]
+inference_model = model_names[config['base_model_id']]
+reference_answer = config['reference_model_name']
 case_dataset = get_dataset(
         infer_model=inference_model,
         ref_model=reference_answer,
@@ -70,8 +70,8 @@ project_dir = Path(__file__).parent
 output_path = project_dir / "eval_output"
 evaluation_output_df.to_parquet(output_path / evaluation_output_file_name)
 
-trained_inference_model = model_names[2]
-reference_answer = model_names[6]
+trained_inference_model = model_names[config['trained_model_id']]
+reference_answer = config['reference_model_name']
 case_dataset = get_dataset(
         infer_model=trained_inference_model,
         ref_model=reference_answer,

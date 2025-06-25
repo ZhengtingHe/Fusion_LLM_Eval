@@ -103,12 +103,13 @@ deepseek_json_chat = ChatOpenAI(
     model=config['model'],  
     base_url=config['base_url'],  
     api_key=config['api_key'],                 
-    temperature=0,
-    request_timeout=180,  # 增加到180秒以处理大型请求
+    temperature=0.3,
+    max_tokens=50000,
+    # request_timeout=180,  # 增加到180秒以处理大型请求
     max_retries=3,        # 保持3次重试
     model_kwargs={
-        "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
-        # "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
+        # "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
+        "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
     },
 )
 

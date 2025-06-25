@@ -6,9 +6,9 @@
 # api_key = "Empty"
 # model = "deepseekv3"
 
-base_url = "http://180.213.184.177:30084/v1"
+base_url = "http://180.213.184.182:30083/v1"
 api_key = "Empty"
-model = "deepseek-r1"
+model = "DeepSeek-R1-0528-AWQ"
 
 # base_url = "http://180.213.184.153:30084/v1"
 # api_key = "Empty"
@@ -38,6 +38,8 @@ model_names = [
     "x-ai/grok-3-beta",
 ]
 QA_file_name = "QA_tables.xlsx"
+base_model_id = 1
+trained_model_id = 2
 [alternative_names]
 "新奥QA测试-32B蒸馏" = "DeepSeek-R1-Distill-Qwen-32B"
 "新奥QA测试-14B蒸馏" = "DeepSeek-R1-Distill-Qwen-14B"
