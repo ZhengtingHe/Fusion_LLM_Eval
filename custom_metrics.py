@@ -3,7 +3,7 @@ with open('config.toml', 'r', encoding='utf-8') as toml_file:
     config = toml.load(toml_file)
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCaseParams
-from deepeval import evaluate
+
 import json, logging
 
 # Silence the urllib3 logger by setting its level to WARNING
@@ -93,26 +93,33 @@ from deepeval.models.base_model import DeepEvalBaseLLM
 
 # deepseek_model = CustomOpenAI(deepseek_json_chat)
 from langchain_openai import ChatOpenAI     # pip install langchain-openai >=0.1.0
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from openai import OpenAI
+from typing import List
 class score(BaseModel):
     score: int
     reason: str
 json_schema = score.model_json_schema()
-deepseek_json_chat = ChatOpenAI(
+
+# class FactSheet(BaseModel):
+#     """Information about a product including a list of factual statements."""
+#     statements: List[str] = Field(description="A list of factual statements about the product.")
+deepseek_chat = ChatOpenAI(
     model=config['model'],  
     base_url=config['base_url'],  
     api_key=config['api_key'],                 
-    temperature=0.3,
-    max_tokens=50000,
+    # temperature=0.0,
+    # max_tokens=50000,
     # request_timeout=180,  # 增加到180秒以处理大型请求
-    max_retries=3,        # 保持3次重试
-    model_kwargs={
-        # "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
-        "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
-    },
+    max_retries=5,        # 保持3次重试
+    # model_kwargs={
+    #     "reasoning": True,
+    #     # "response_format": {"type": "json_object"},   # ★ 启用 JSON-Mode
+    #     # "extra_body": {"guided_json": json_schema}, # Using directly a JSON Schema
+    # },
 )
-
+deepseek_json_chat = deepseek_chat.bind(response_format={"type": "json_object"})
+# statements_json_llm = deepseek_chat.with_structured_output(FactSheet)
 from util import repair_json_string
 
 class CustomOpenAI(DeepEvalBaseLLM):
@@ -126,13 +133,19 @@ class CustomOpenAI(DeepEvalBaseLLM):
         return self._model          # ChatOpenAI 实例
 
     def generate(self, prompt: str) -> str:
-        content = self._model.invoke(prompt).content
-        repaired_content = repair_json_string(content)
+        res = self._model.invoke(prompt)
+        content = res.content
+        # repaired_content = repair_json_string(content)
+        repaired_content = content
         if self._debug:
             # logging.info(f"Prompt send to LLM:{prompt}")
+            # logging.info(f"Response from LLM: {content}")
+            # logging.info(f"Reasoning content: {reasoning_content}")
+            # logging.info(f"Usage metadata: {res.usage_metadata}")
 
             try:
                 json.loads(repaired_content)  # 尝试解析 JSON
+                # logging.info(f"Valid JSON: {content}")
             except json.JSONDecodeError as e:
                 logging.warning(f"Invalid JSON caused by prompt: {prompt}")
                 logging.warning(f"Invalid JSON response: {repaired_content}")
@@ -145,14 +158,16 @@ class CustomOpenAI(DeepEvalBaseLLM):
     async def a_generate(self, prompt: str) -> str:
         res = await self._model.ainvoke(prompt)
         content = res.content
-        repaired_content = repair_json_string(content)
+        # repaired_content = repair_json_string(content)
+        repaired_content = content
         if self._debug:
             # logging.info(f"Prompt send to LLM:{prompt}")
             # logging.info(f"Response from LLM: {content}")
-            logging.info(f"Usage metadata: {res.usage_metadata}")
+            # logging.info(f"Reasoning content: {reasoning_content}")
+            # logging.info(f"Usage metadata: {res.usage_metadata}")
             try:
                 json.loads(repaired_content)
-                logging.info(f"Valid JSON: {content}")  
+                # logging.info(f"Valid JSON: {content}")  
             except json.JSONDecodeError as e:
                 logging.warning(f"Invalid JSON caused by prompt: {prompt}")
                 logging.warning(f"Invalid JSON response: {repaired_content}")
@@ -203,8 +218,91 @@ relevance_metric = GEval(
     model=deepseek_model
 )
 
+from deepeval.metrics import AnswerRelevancyMetric
+# answer_relevancy_metric = AnswerRelevancyMetric(
+#     threshold=0.7,
+#     model=deepseek_model,
+#     include_reason=False,
+# )
+# from deepeval.metrics.answer_relevancy import AnswerRelevancyTemplate
+
+# Define custom template
+# class CustomTemplate(AnswerRelevancyTemplate):
+#     @staticmethod
+#     def generate_statements(actual_output: str):
+#         return f"""The user will provide some text, please extract the statements in the text and return them in a list as a JSON format.
+#         EXAMPLE INPUT:
+#         Our new laptop model features a high-resolution Retina display for crystal-clear visuals.
+
+#         EXAMPLE JSON OUTPUT:
+#         {
+#             "statements": [
+#                 "The new laptop model has a high-resolution Retina display.",
+#                 "The Retina display provides crystal-clear visuals."
+#             ]
+#         }
+#         ===== END OF EXAMPLE ======
+
+#         Text:
+#         {actual_output}
+#         """
+
+# Inject custom template to metric
+# answer_relevancy_metric = AnswerRelevancyMetric(
+#     evaluation_template=CustomTemplate,
+#     threshold=0.7,
+#     model=deepseek_model,
+#     include_reason=False,
+#     )
+
+answer_relevancy_metric = GEval(
+    name="回答相关性",
+    evaluation_steps=[
+        "用简体中文陈述给分原因",
+        "确保实际输出回答了输入的问题",
+        "实际输出不应该包含与输入领域无关的信息",
+    ],
+    evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.INPUT],
+    model=deepseek_model
+)
+
+
+from deepeval.metrics import FaithfulnessMetric
+# faithfulness_metric = FaithfulnessMetric(
+#     threshold=0.7,
+#     model=deepseek_model,
+#     include_reason=False,
+# )
+faithfulness_metric = GEval(
+    name="忠实性",
+    evaluation_steps=[
+        "用简体中文陈述给分原因",
+        "实际回答是基于召回的文本块生成的，但可以包括其他信息",
+        "实际回答的事实不能与召回的文本块中的事实相矛盾",
+    ],
+    evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.RETRIEVAL_CONTEXT],
+    model=deepseek_model
+)
+
+from deepeval.metrics import ContextualRelevancyMetric
+# contextual_relevancy_metric = ContextualRelevancyMetric(
+#     threshold=0.7,
+#     model=deepseek_model,
+#     include_reason=False,
+# )
+contextual_relevancy_metric = GEval(
+    name="上下文相关性",
+    evaluation_steps=[
+        "用简体中文陈述给分原因",
+        "召回的文本块应该与输入相关",
+        "文本块的内容应该有助于回答输入的问题",
+    ],
+    evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.RETRIEVAL_CONTEXT],
+    model=deepseek_model
+)
+
 from deepeval.dataset import EvaluationDataset
-from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.test_case import LLMTestCase
 def get_dataset(infer_model, ref_model, QA_dataframe, domains):
     questions = []
     actual_output = []
@@ -230,6 +328,7 @@ def get_dataset(infer_model, ref_model, QA_dataframe, domains):
     return dataset
 
 if __name__ == "__main__":
+    from deepeval import evaluate
     # 测试 correctness_metric
     test_case1 = LLMTestCase(
         input="水能喝吗", 
@@ -248,3 +347,13 @@ if __name__ == "__main__":
         )
 
     evaluate(test_cases=[test_case1, test_case2, test_case3], metrics=[correctness_metric, derivation_metric, relevance_metric])
+
+    # RAG case
+    actual_output = "We offer a 30-day full refund at no extra cost."
+    retrieval_context = ["All customers are eligible for a 30 day full refund at no extra cost."]
+    RAG_test_case = LLMTestCase(
+    input="What if these shoes don't fit?",
+    actual_output=actual_output,
+    retrieval_context=retrieval_context
+    )
+    evaluate(test_cases=[RAG_test_case], metrics=[faithfulness_metric, answer_relevancy_metric, contextual_relevancy_metric])

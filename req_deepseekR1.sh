@@ -1,4 +1,4 @@
-curl --location http://180.213.184.177:30084/v1/chat/completions \
+curl --location http://180.213.184.147:30082/v1/chat/completions \
 -H "Content-Type: application/json" \
 -d '{
     "model": "deepseek-r1",
