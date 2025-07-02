@@ -105,6 +105,20 @@ def get_QA_from_different_models():
     QA_df['goldens'] = pd.read_excel(dir_path / "goldens" / config['goldens_QA_excel_file'])
     return QA_df
 
+from IPython.display import display, Markdown
+
+def display_markdown(md_string, display_type):
+  """
+  在 Jupyter Notebook 中显示 Markdown 格式的字符串。
+
+  参数:
+    md_string (str): Markdown 格式的字符串。
+    display_type (str): 显示类型，0 表示答案，1 表示参考。
+  """
+  if display_type:
+    display(Markdown("# Reference:\n" + md_string))
+  else:
+    display(Markdown("# Answer:\n" + md_string))
 
 if __name__ == "__main__":
     test_cases = [

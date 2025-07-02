@@ -188,8 +188,8 @@ correctness_metric = GEval(
         "用简体中文陈述给分原因",
         "检查最终结论是否与预期中的结论一致",
         "推导思路相近但结论不同的情况，认为是错误的",
-        "如果出现公式和物理量，需要检查代表内容是否一致",
-        # "如果实际输出中包含预期输出中没有的内容，只要不影响结论并且与问题有关，认为是正确的",
+        "所有出现公式和物理量，需要检查代表内容是否一致",
+        "如果实际输出中包含预期输出中没有的内容，只要不影响结论并且与问题有关，认为是正确的",
     ],
     evaluation_params = [LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT,LLMTestCaseParams.EXPECTED_OUTPUT],
     model=deepseek_model
@@ -219,12 +219,12 @@ relevance_metric = GEval(
 )
 
 from deepeval.metrics import AnswerRelevancyMetric
-# answer_relevancy_metric = AnswerRelevancyMetric(
-#     threshold=0.7,
-#     model=deepseek_model,
-#     include_reason=False,
-# )
-# from deepeval.metrics.answer_relevancy import AnswerRelevancyTemplate
+answer_relevancy_metric = AnswerRelevancyMetric(
+    threshold=0.7,
+    model=deepseek_model,
+    include_reason=False,
+)
+from deepeval.metrics.answer_relevancy import AnswerRelevancyTemplate
 
 # Define custom template
 # class CustomTemplate(AnswerRelevancyTemplate):
@@ -247,7 +247,7 @@ from deepeval.metrics import AnswerRelevancyMetric
 #         {actual_output}
 #         """
 
-# Inject custom template to metric
+# # Inject custom template to metric
 # answer_relevancy_metric = AnswerRelevancyMetric(
 #     evaluation_template=CustomTemplate,
 #     threshold=0.7,
@@ -255,7 +255,7 @@ from deepeval.metrics import AnswerRelevancyMetric
 #     include_reason=False,
 #     )
 
-answer_relevancy_metric = GEval(
+custom_answer_relevancy_metric = GEval(
     name="回答相关性",
     evaluation_steps=[
         "用简体中文陈述给分原因",
@@ -268,12 +268,12 @@ answer_relevancy_metric = GEval(
 
 
 from deepeval.metrics import FaithfulnessMetric
-# faithfulness_metric = FaithfulnessMetric(
-#     threshold=0.7,
-#     model=deepseek_model,
-#     include_reason=False,
-# )
-faithfulness_metric = GEval(
+faithfulness_metric = FaithfulnessMetric(
+    threshold=0.7,
+    model=deepseek_model,
+    include_reason=False,
+)
+custom_faithfulness_metric = GEval(
     name="忠实性",
     evaluation_steps=[
         "用简体中文陈述给分原因",
@@ -285,12 +285,12 @@ faithfulness_metric = GEval(
 )
 
 from deepeval.metrics import ContextualRelevancyMetric
-# contextual_relevancy_metric = ContextualRelevancyMetric(
-#     threshold=0.7,
-#     model=deepseek_model,
-#     include_reason=False,
-# )
-contextual_relevancy_metric = GEval(
+contextual_relevancy_metric = ContextualRelevancyMetric(
+    threshold=0.7,
+    model=deepseek_model,
+    include_reason=False,
+)
+custom_contextual_relevancy_metric = GEval(
     name="上下文相关性",
     evaluation_steps=[
         "用简体中文陈述给分原因",
