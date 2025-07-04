@@ -4,7 +4,7 @@ from deepeval.dataset import EvaluationDataset
 from deepeval.evaluate import DisplayConfig, AsyncConfig, evaluate
 from deepeval.test_case import LLMTestCase
 # 明确导入原始的度量类
-from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualRelevancyMetric, ContextualRecallMetric
+from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualRelevancyMetric, ContextualRecallMetric, ContextualPrecisionMetric
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
@@ -58,6 +58,11 @@ class RetryingContextualRelevancyMetric(ContextualRelevancyMetric):
 class RetryingContextualRecallMetric(ContextualRecallMetric):
     async def a_measure(self, test_case: LLMTestCase, **kwargs) -> float:
         return await measure_with_retry(self, test_case, **kwargs)
+    
+# 5. 为 ContextualPrecisionMetric 创建一个带重试功能的子类
+class RetryingContextualPrecisionMetric(ContextualPrecisionMetric):
+    async def a_measure(self, test_case: LLMTestCase, **kwargs) -> float:
+        return await measure_with_retry(self, test_case, **kwargs)
 # --- 修改结束 ---
 
 
@@ -85,6 +90,11 @@ contextual_recall_metric = RetryingContextualRecallMetric(
     model=deepseek_model,
     include_reason=False,
 )
+contextual_precision_metric = RetryingContextualPrecisionMetric(
+    threshold=0.7,
+    model=deepseek_model,
+    include_reason=False,
+)
 
 
 # --- 您的原始代码（基本保持不变） ---
@@ -97,10 +107,12 @@ async_config = AsyncConfig(
     max_concurrent=20
 )
 RAG_test_dataset = EvaluationDataset()
+# file_name = Path('20250701_123749.json')
+file_name = Path('20250703_131500.json')
 
 try:
     RAG_test_dataset.add_test_cases_from_json_file(
-        file_path='./RAG-test-dataset/20250701_123749.json',
+        file_path='RAG-test-dataset' / file_name,
         input_key_name="input",
         actual_output_key_name="actual_output",
         expected_output_key_name="expected_output",
@@ -124,7 +136,8 @@ evaluation_output = evaluate(
         answer_relevancy_metric, 
         faithfulness_metric, 
         contextual_relevancy_metric,
-        contextual_recall_metric
+        contextual_recall_metric,
+        contextual_precision_metric,
     ],
     display_config=display_config,
     async_config=async_config,
@@ -142,7 +155,8 @@ evaluation_output_df = pd.DataFrame(
             "faithfulness_score": result.metrics_data[1].score,
             "contextual_relevancy_score": result.metrics_data[2].score,
             "contextual_recall_score": result.metrics_data[3].score,
-        } 
+            "contextual_precision_score": result.metrics_data[4].score,
+        }
         for result in evaluation_output.test_results
     ]
 )
@@ -150,7 +164,7 @@ evaluation_output_df = pd.DataFrame(
 # 确保输出目录存在
 output_dir = Path('RAG-results')
 output_dir.mkdir(exist_ok=True)
-output_file = output_dir / 'evaluation_output_of_RAG.parquet'
+output_file = output_dir / Path(file_name.stem + 'evaluation_output_of_RAG.parquet')
 
 evaluation_output_df.to_parquet(output_file)
 

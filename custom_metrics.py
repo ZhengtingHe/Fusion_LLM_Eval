@@ -301,6 +301,16 @@ custom_contextual_relevancy_metric = GEval(
     model=deepseek_model
 )
 
+custom_contextual_recall_metric = GEval(
+    name="上下文召回",
+    evaluation_steps=[
+        "用简体中文陈述给分原因",
+        "预期输出中的所需要的信息应该能从召回的文本块中找到",
+    ],
+    evaluation_params=[LLMTestCaseParams.EXPECTED_OUTPUT, LLMTestCaseParams.RETRIEVAL_CONTEXT],
+    model=deepseek_model
+)
+
 from deepeval.dataset import EvaluationDataset
 from deepeval.test_case import LLMTestCase
 def get_dataset(infer_model, ref_model, QA_dataframe, domains):
